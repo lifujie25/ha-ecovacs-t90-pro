@@ -95,6 +95,7 @@ class EcovacsT90MapCard extends HTMLElement {
     this._availableRooms = new Map();
     this._refreshing = false;
     this._cleaning = false;
+    this._stopping = false;
     this._lastRefresh = 0;
     this._timer = null;
   }
@@ -174,7 +175,7 @@ class EcovacsT90MapCard extends HTMLElement {
         .loading, .error { margin: auto; padding: 32px; color: var(--secondary-text-color); }
         .error { color: var(--error-color); }
         .controls {
-          display: grid; grid-template-columns: auto auto minmax(120px, 1fr) auto auto;
+          display: grid; grid-template-columns: auto auto minmax(120px, 1fr) auto auto auto;
           align-items: center; gap: 6px; padding: 10px 12px;
           border-top: 1px solid var(--divider-color);
         }
@@ -197,6 +198,11 @@ class EcovacsT90MapCard extends HTMLElement {
           background: var(--primary-color); font-weight: 600;
         }
         button.primary:hover { filter: brightness(.95); }
+        button.stop {
+          padding: 0 14px; color: var(--text-primary-color, #fff);
+          background: var(--error-color, #db4437); font-weight: 600;
+        }
+        button.stop:hover { filter: brightness(.95); }
         input[type="range"] { width: 100%; accent-color: var(--primary-color); }
         .selection {
           min-height: 42px; padding: 8px 14px; display: flex; align-items: center;
@@ -239,7 +245,7 @@ class EcovacsT90MapCard extends HTMLElement {
         @media (max-width: 600px) {
           .viewport { height: 54vh; min-height: 300px; }
           .controls { grid-template-columns: auto auto minmax(80px, 1fr) auto; }
-          button.primary { grid-column: 1 / -1; width: 100%; }
+          button.primary, button.stop { grid-column: 1 / -1; width: 100%; }
           dialog.map-dialog { width: 100vw; height: 100dvh; border-radius: 0; }
           .dialog-controls { grid-template-columns: auto auto auto minmax(80px, 1fr); }
         }
@@ -258,6 +264,7 @@ class EcovacsT90MapCard extends HTMLElement {
           <input class="zoom" type="range" min="0.5" max="3" step="0.1" value="1" aria-label="地图缩放">
           <button class="refresh" title="刷新地图和位置" aria-label="刷新地图和位置"><ha-icon icon="mdi:refresh"></ha-icon></button>
           <button class="primary clean" disabled><ha-icon icon="mdi:robot-vacuum"></ha-icon><span>清扫所选区域</span></button>
+          <button class="stop" disabled><ha-icon icon="mdi:stop-circle-outline"></ha-icon><span>停止清扫</span></button>
         </div>
         <div class="command-status" aria-live="polite"></div>
       </ha-card>
@@ -282,6 +289,7 @@ class EcovacsT90MapCard extends HTMLElement {
     this._mapElement = this.shadowRoot.querySelector(".map");
     this._selectionElement = this.shadowRoot.querySelector(".selection");
     this._cleanButton = this.shadowRoot.querySelector(".clean");
+    this._stopButton = this.shadowRoot.querySelector(".stop");
     this._dialog = this.shadowRoot.querySelector(".map-dialog");
     this._dialogMapElement = this.shadowRoot.querySelector(".dialog-map");
     this.shadowRoot.querySelector(".dialog-title").textContent = this._config.title;
@@ -304,6 +312,7 @@ class EcovacsT90MapCard extends HTMLElement {
       if (event.target === this._dialog) this._dialog.close();
     });
     this._cleanButton.addEventListener("click", () => this._cleanSelectedRooms());
+    this._stopButton.addEventListener("click", () => this._stopCleaning());
     this._startTimer();
   }
 
@@ -448,7 +457,8 @@ class EcovacsT90MapCard extends HTMLElement {
       chip.addEventListener("click", () => this._toggleRoom(id, name));
       this._selectionElement.append(chip);
     }
-    this._cleanButton.disabled = this._cleaning || this._selectedRooms.size === 0;
+    this._cleanButton.disabled =
+      this._cleaning || this._stopping || this._selectedRooms.size === 0;
   }
 
   async _cleanSelectedRooms() {
@@ -478,6 +488,31 @@ class EcovacsT90MapCard extends HTMLElement {
       this._cleaning = false;
       if (buttonText) buttonText.textContent = "清扫所选区域";
       this._applySelection();
+      this._updateVacuumState();
+    }
+  }
+
+  async _stopCleaning() {
+    if (!this._hass || this._stopping || this._cleaning) return;
+    this._stopping = true;
+    this._stopButton.disabled = true;
+    this._applySelection();
+    const buttonText = this._stopButton.querySelector("span");
+    if (buttonText) buttonText.textContent = "正在停止";
+    this._setCommandStatus("正在发送停止命令…");
+    try {
+      await this._hass.callService("vacuum", "stop", {
+        entity_id: this._config.vacuum_entity,
+      });
+      this._setCommandStatus("已发送停止清扫命令", false, true);
+    } catch (error) {
+      const message = error?.message || String(error);
+      this._setCommandStatus(`停止命令发送失败：${message}`, true);
+    } finally {
+      this._stopping = false;
+      if (buttonText) buttonText.textContent = "停止清扫";
+      this._applySelection();
+      this._updateVacuumState();
     }
   }
 
@@ -502,6 +537,12 @@ class EcovacsT90MapCard extends HTMLElement {
     };
     const element = this.shadowRoot.querySelector(".state");
     if (element) element.textContent = stateNames[state] || state;
+    if (this._stopButton) {
+      this._stopButton.disabled =
+        this._stopping ||
+        this._cleaning ||
+        ["unavailable", "unknown"].includes(state);
+    }
   }
 }
 
