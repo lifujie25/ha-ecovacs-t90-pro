@@ -1,0 +1,19 @@
+{
+  "domain": "ecovacs_t90_patch",
+  "name": "科沃斯 T90 Pro 中国区地图补丁",
+  "codeowners": [
+    "@lifujie25"
+  ],
+  "config_flow": true,
+  "dependencies": [
+    "ecovacs",
+    "frontend",
+    "http"
+  ],
+  "documentation": "https://github.com/lifujie25/ha-ecovacs-t90-pro",
+  "integration_type": "helper",
+  "iot_class": "calculated",
+  "issue_tracker": "https://github.com/lifujie25/ha-ecovacs-t90-pro/issues",
+  "requirements": [],
+  "version": "1.0.0"
+}

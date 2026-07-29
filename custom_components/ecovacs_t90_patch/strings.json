@@ -1,0 +1,8 @@
+{
+  "title": "Ecovacs T90 Pro CN Map Patch",
+  "config": {
+    "abort": {
+      "already_configured": "The T90 Pro CN map compatibility patch is already installed."
+    }
+  }
+}
