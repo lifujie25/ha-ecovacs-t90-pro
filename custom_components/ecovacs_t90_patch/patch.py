@@ -24,10 +24,21 @@ from deebot_client.events import (
     PositionsEvent,
     RoomsEvent,
 )
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanMode, StaticDeviceInfo
 
 from .const import SOURCE_HARDWARE_MODULE, TARGET_DEVICE_CLASS
 from .map import GetMapBootstrap, GetMapSetV2T90, add_room_metadata_to_svg
+
+
+class T90CleanAreaV2(CleanAreaV2):
+    """Translate HA room cleaning to the T90 Pro freeClean V2 dialect."""
+
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        if mode == CleanMode.SPOT_AREA:
+            mode = CleanMode.FREE_CLEAN
+        super().__init__(mode, area, cleanings)
 
 
 def _install_svg_room_labels() -> None:
@@ -76,7 +87,7 @@ def _build_device_info() -> StaticDeviceInfo:
         action=replace(
             source_device_info.capabilities.clean.action,
             command=CleanV2,
-            area=CleanAreaV2,
+            area=T90CleanAreaV2,
         ),
     )
     capabilities = replace(

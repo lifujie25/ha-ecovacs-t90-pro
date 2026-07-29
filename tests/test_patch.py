@@ -128,7 +128,7 @@ def test_hardware_profile_uses_v2_clean_commands() -> None:
     assert room_command._args == {
         "act": "start",
         "content": {
-            "type": "spotArea",
-            "value": "5,8",
+            "type": "freeClean",
+            "value": "1,5,8",
         },
     }
