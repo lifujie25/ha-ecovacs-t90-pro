@@ -4,7 +4,7 @@ DOMAIN = "ecovacs_t90_patch"
 ECOVACS_DOMAIN = "ecovacs"
 TARGET_DEVICE_CLASS = "guaexd"
 SOURCE_HARDWARE_MODULE = "deebot_client.hardware.twunby"
-INTEGRATION_VERSION = "1.0.5"
+INTEGRATION_VERSION = "1.0.6"
 
 CARD_STATIC_URL = "/ecovacs_t90_patch"
 CARD_FILENAME = "ecovacs-t90-map-card.js"

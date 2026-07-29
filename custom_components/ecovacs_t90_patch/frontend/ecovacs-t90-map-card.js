@@ -538,10 +538,7 @@ class EcovacsT90MapCard extends HTMLElement {
     const element = this.shadowRoot.querySelector(".state");
     if (element) element.textContent = stateNames[state] || state;
     if (this._stopButton) {
-      this._stopButton.disabled =
-        this._stopping ||
-        this._cleaning ||
-        ["unavailable", "unknown"].includes(state);
+      this._stopButton.disabled = this._stopping || this._cleaning;
     }
   }
 }
