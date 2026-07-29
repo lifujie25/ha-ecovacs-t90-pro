@@ -1,6 +1,12 @@
 {
   "title": "科沃斯 T90 Pro 中国区地图补丁",
   "config": {
+    "step": {
+      "user": {
+        "title": "安装 T90 Pro 中国区地图支持",
+        "description": "无需输入额外账号。安装后会自动重新加载现有的官方 Ecovacs 集成。"
+      }
+    },
     "abort": {
       "already_configured": "T90 Pro 中国区地图兼容补丁已经安装。"
     }

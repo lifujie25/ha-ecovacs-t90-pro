@@ -1,6 +1,12 @@
 {
   "title": "Ecovacs T90 Pro CN Map Patch",
   "config": {
+    "step": {
+      "user": {
+        "title": "Install T90 Pro CN map support",
+        "description": "No additional credentials are required. The existing official Ecovacs integration will be reloaded automatically."
+      }
+    },
     "abort": {
       "already_configured": "The T90 Pro CN map compatibility patch is already installed."
     }
