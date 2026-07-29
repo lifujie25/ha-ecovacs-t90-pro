@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityMap,
 )
+from deebot_client.commands.json.clean import CleanAreaV2, CleanV2
 from deebot_client.commands.json.map import (
     GetMapInfoV2,
     GetMapTrace,
@@ -53,7 +54,7 @@ def _install_svg_room_labels() -> None:
 
 
 def _build_device_info() -> StaticDeviceInfo:
-    """Extend the conservative T90 profile with its current V2 map protocol."""
+    """Extend the conservative T90 profile with its current V2 protocols."""
     source_module = importlib.import_module(SOURCE_HARDWARE_MODULE)
     source_device_info = source_module.get_device_info()
 
@@ -70,7 +71,19 @@ def _build_device_info() -> StaticDeviceInfo:
         set=CapabilityExecute(GetMapSetV2T90),
         trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
     )
-    capabilities = replace(source_device_info.capabilities, map=map_capabilities)
+    clean_capabilities = replace(
+        source_device_info.capabilities.clean,
+        action=replace(
+            source_device_info.capabilities.clean.action,
+            command=CleanV2,
+            area=CleanAreaV2,
+        ),
+    )
+    capabilities = replace(
+        source_device_info.capabilities,
+        clean=clean_capabilities,
+        map=map_capabilities,
+    )
     return replace(source_device_info, capabilities=capabilities)
 
 

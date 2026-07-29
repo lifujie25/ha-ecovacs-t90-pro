@@ -10,6 +10,7 @@ from pathlib import Path
 from deebot_client.event_bus import EventBus
 from deebot_client.events import MapSetType
 from deebot_client.message import HandlingState
+from deebot_client.models import CleanAction, CleanMode
 
 ROOT = Path(__file__).parents[1] / "custom_components" / "ecovacs_t90_patch"
 
@@ -108,4 +109,26 @@ def test_map_bootstrap_requests_v2_map_layers_and_position() -> None:
     assert result.requested_commands[-1]._args == {
         "type": ["chargePos", "deebotPos"],
         "mid": "test-map",
+    }
+
+
+def test_hardware_profile_uses_v2_clean_commands() -> None:
+    profile = patch_module._build_device_info()
+    clean_action = profile.capabilities.clean.action
+
+    auto_command = clean_action.command(CleanAction.START)
+    room_command = clean_action.area(CleanMode.SPOT_AREA, [5, 8], 1)
+
+    assert auto_command.NAME == "clean_V2"
+    assert auto_command._args == {
+        "act": "start",
+        "content": {"type": "auto"},
+    }
+    assert room_command.NAME == "clean_V2"
+    assert room_command._args == {
+        "act": "start",
+        "content": {
+            "type": "spotArea",
+            "value": "5,8",
+        },
     }

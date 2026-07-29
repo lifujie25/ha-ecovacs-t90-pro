@@ -94,6 +94,7 @@ class EcovacsT90MapCard extends HTMLElement {
     this._selectedRooms = new Map();
     this._availableRooms = new Map();
     this._refreshing = false;
+    this._cleaning = false;
     this._lastRefresh = 0;
     this._timer = null;
   }
@@ -177,6 +178,13 @@ class EcovacsT90MapCard extends HTMLElement {
           align-items: center; gap: 6px; padding: 10px 12px;
           border-top: 1px solid var(--divider-color);
         }
+        .command-status {
+          min-height: 18px; padding: 0 14px 8px; color: var(--secondary-text-color);
+          font-size: 13px;
+        }
+        .command-status:empty { display: none; }
+        .command-status.error { color: var(--error-color); }
+        .command-status.success { color: var(--success-color, #2e7d32); }
         button {
           height: 40px; min-width: 40px; border: 0; border-radius: 6px;
           color: var(--primary-text-color); background: transparent; cursor: pointer;
@@ -251,6 +259,7 @@ class EcovacsT90MapCard extends HTMLElement {
           <button class="refresh" title="刷新地图和位置" aria-label="刷新地图和位置"><ha-icon icon="mdi:refresh"></ha-icon></button>
           <button class="primary clean" disabled><ha-icon icon="mdi:robot-vacuum"></ha-icon><span>清扫所选区域</span></button>
         </div>
+        <div class="command-status" aria-live="polite"></div>
       </ha-card>
       <dialog class="map-dialog" aria-label="T90 地图缩放窗口">
         <div class="dialog-layout">
@@ -439,21 +448,45 @@ class EcovacsT90MapCard extends HTMLElement {
       chip.addEventListener("click", () => this._toggleRoom(id, name));
       this._selectionElement.append(chip);
     }
-    this._cleanButton.disabled = this._selectedRooms.size === 0;
+    this._cleanButton.disabled = this._cleaning || this._selectedRooms.size === 0;
   }
 
   async _cleanSelectedRooms() {
-    if (!this._hass || !this._selectedRooms.size) return;
+    if (!this._hass || !this._selectedRooms.size || this._cleaning) return;
     const names = [...this._selectedRooms.values()].join("、");
     if (!window.confirm(`确认清扫以下区域？\n${names}`)) return;
-    await this._hass.callService("vacuum", "send_command", {
-      entity_id: this._config.vacuum_entity,
-      command: "spot_area",
-      params: {
-        rooms: [...this._selectedRooms.keys()],
-        cleanings: 1,
-      },
-    });
+    this._cleaning = true;
+    this._cleanButton.disabled = true;
+    const buttonText = this._cleanButton.querySelector("span");
+    if (buttonText) buttonText.textContent = "正在发送";
+    this._setCommandStatus("正在发送区域清扫命令…");
+    try {
+      await this._hass.callService("vacuum", "send_command", {
+        entity_id: this._config.vacuum_entity,
+        command: "spot_area",
+        params: {
+          rooms: [...this._selectedRooms.keys()],
+          cleanings: 1,
+        },
+      });
+      this._setCommandStatus(`已发送清扫命令：${names}`, false, true);
+      this._selectedRooms.clear();
+    } catch (error) {
+      const message = error?.message || String(error);
+      this._setCommandStatus(`清扫命令发送失败：${message}`, true);
+    } finally {
+      this._cleaning = false;
+      if (buttonText) buttonText.textContent = "清扫所选区域";
+      this._applySelection();
+    }
+  }
+
+  _setCommandStatus(message, isError = false, isSuccess = false) {
+    const status = this.shadowRoot.querySelector(".command-status");
+    if (!status) return;
+    status.textContent = message;
+    status.classList.toggle("error", isError);
+    status.classList.toggle("success", isSuccess);
   }
 
   _updateVacuumState() {
