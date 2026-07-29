@@ -8,12 +8,13 @@
   "dependencies": [
     "ecovacs",
     "frontend",
-    "http"
+    "http",
+    "lovelace"
   ],
   "documentation": "https://github.com/lifujie25/ha-ecovacs-t90-pro",
   "integration_type": "helper",
   "iot_class": "calculated",
   "issue_tracker": "https://github.com/lifujie25/ha-ecovacs-t90-pro/issues",
   "requirements": [],
-  "version": "1.0.0"
+  "version": "1.0.1"
 }
